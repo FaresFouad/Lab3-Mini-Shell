@@ -77,3 +77,18 @@ void Command::execute()
 
 
 }
+
+
+while(arg.back() != '"' && i + 1 < numTokens){
+        i++;
+        arg += " ";
+        arg += tokens[i].value; 
+    }
+    
+    // Strip the starting and ending quote characters
+    if(arg.length() >= 2){
+        arg = arg.substr(1, arg.length() - 2);
+    }
+    
+    Command::_currentCommand.insertArgument(strdup(arg.c_str()));
+}
