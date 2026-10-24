@@ -6,7 +6,7 @@ void Command::execute()
     */
     int currentInput = 0;
     for(int i = 0; i < _numberOfSimpleCommands; i++){
-        int fd[2];
+        int fd[2] = {-1, -1};
         if(i + 1 < _numberOfSimpleCommands){
             pipe(fd);
         }
@@ -18,9 +18,40 @@ void Command::execute()
                 }
                 if(currentInput != 0){
                     dup2(currentInput, 0);
+                    close(currentInput);
                 }
-                close(fd[0]);
-                close(fd[1]);
+                if(fd[0] != -1){
+                    close(fd[0]);
+                    close(fd[1]);
+                }
+                
+            }
+            if(_outFile){
+                int out;
+                if(_append == 0 && _out_error != 1){
+                    out = open(_outFile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+                }
+                else{
+                    out = open(_outFile, O_WRONLY | O_CREAT | O_APPEND, 0666);
+                }
+                    
+                    dup2(out, 1);
+                if(_out_error == 1)
+                    dup2(out, 2);
+                    close(out);
+            }
+
+            if(_inputFile && i == 0){//it would have been better if _inputFile was specified in which simple command it belongs to.
+                int in = open(_inputFile, O_RDONLY);
+                dup2(in, 0);
+                close(in);
+            }
+
+            if(_errFile && _out_error == 0){
+                int err = open(_outFile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+                dup2(err, 2);
+                close(err);
+
             }
             if(execvp(_simpleCommands[i]->_arguments[0], _simpleCommands[i]->_arguments) == -1){
                 perror("Error: Command does not exist.");
@@ -34,8 +65,7 @@ void Command::execute()
         else{
             if(i + 1 < _numberOfSimpleCommands){
                 currentInput = fd[0];
-                close(fd[0]);
-                close(fd[1])
+                close(fd[1]);
             }
             if(!_background){
                 waitpid(pid, NULL, 0);
