@@ -29,9 +29,25 @@
 #include "tokenizer.h"
 
 
-void handler(int num){
+void ctrlc_handler(int num){
     printf("\n");
     Command::_currentCommand.prompt();
+}
+
+void log(int pid){
+    int file = open("logs.txt", O_WRONLY | O_CREAT | O_APPEND, 0666);
+        std::string log = std::to_string(pid) + " child has been terminated\n";
+        if(file != -1){
+            write(file, log.c_str(), log.length());
+            close(file);
+        }
+}
+
+void log_handler(int num){
+    int pid;
+    while((pid = waitpid(-1, NULL, 0)) > 0){ 
+        log(pid);
+    }
 }
 void parse(std::vector<Token> &tokens)
 {
@@ -344,9 +360,11 @@ void Command::execute()
                 currentInput = fd[0];
                 close(fd[1]);
             }
+            signal(SIGCHLD, log_handler);
             if(!_background){
                 waitpid(pid, NULL, 0);
-            }
+                log(pid);
+           }
         }
 }
     clear();
@@ -354,7 +372,7 @@ void Command::execute()
 
 void Command::prompt()
 {
-    signal(SIGINT, handler);
+    signal(SIGINT, ctrlc_handler);
     while (true)
     {
         printf("myshell>");
