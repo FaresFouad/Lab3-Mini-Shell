@@ -29,7 +29,7 @@
 #include "tokenizer.h"
 
 
-extern "C" void sigint_handler(int sig){
+void handler(int num){
     printf("\n");
     Command::_currentCommand.prompt();
 }
@@ -258,13 +258,12 @@ void Command::print()
 
 void Command::execute()
 {
-    print();
     /*
         Write your code here
     */
     int currentInput = 0;
     if(_numberOfSimpleCommands == 1 && std::string(_simpleCommands[0]->_arguments[0]) == "exit"){
-        perror("\nGood bye!!");
+        printf("\n  Good bye!!\n");
         exit(0);
     }
     else if(_numberOfSimpleCommands == 1 && std::string(_simpleCommands[0]->_arguments[0]) == "cd"){
@@ -277,9 +276,11 @@ void Command::execute()
             chdir(getenv("HOME"));
         }
         clear();
-        prompt();
         return;
     }
+
+    print();
+
     for(int i = 0; i < _numberOfSimpleCommands; i++){
         int fd[2] = {-1, -1};
         if(i + 1 < _numberOfSimpleCommands){
@@ -287,7 +288,6 @@ void Command::execute()
         }
         int pid = fork();
         if(pid == 0){
-            signal(SIGINT, SIG_DFL);
             if(i + 1 < _numberOfSimpleCommands || currentInput!= 0){
                 if(i + 1 < _numberOfSimpleCommands){
                     dup2(fd[1], 1);
@@ -350,21 +350,18 @@ void Command::execute()
         }
 }
     clear();
-    prompt();
-
-
 }
 
 void Command::prompt()
 {
-    printf("myshell>");
-    fflush(stdout);
-    std::string input;
+    signal(SIGINT, handler);
     while (true)
     {
+        printf("myshell>");
+        fflush(stdout);
+        std::string input;
         std::getline(std::cin, input); 
         std::vector<Token> tokens = tokenize(input);
-        signal(SIGINT, sigint_handler);
         parse(tokens);
     }
 }
