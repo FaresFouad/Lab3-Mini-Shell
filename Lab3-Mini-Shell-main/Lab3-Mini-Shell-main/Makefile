@@ -3,10 +3,13 @@
 ## so we should run make , that will create our object myshell ,
 ## ./myshell should run your application 
 
-all: myshell
+all: compile run
 
-myshell:
+compile:
 	g++  -g -Wall -o myshell *.cc
 
 clean:
 	rm  -f myshell
+
+run:
+	./myshell
